@@ -1,0 +1,9 @@
+{
+	"name" : "com.unity.zombieobjectdetector",
+	"version" : "0.1.0",
+	"displayName" : "Zombie Object Detector",
+	"description" : "Tool to detect \"fake null\" GameObjects and Components. https://github.com/Unity-Technologies/ZombieObjectDetector",
+	"unity" : "2018.4",
+	"keywords" : [ "zombie", "fake", "null", "leak" ]
+}
+	
