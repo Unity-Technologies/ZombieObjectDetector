@@ -15,65 +15,26 @@ namespace CSharpZombieDetector
 	{
 
 		/// <summary>
-		/// Checks if the typeName is a type within the Assembly.
-		/// </summary>
-		/// <param name="typeName"> String name of the type to search for. </param>
-		/// <returns> True if type is succesfully found. </returns>
-		public static bool IsType(string typeName)
-		{
-			Type foundType = null;
-			try
-			{
-				foundType = Type.GetType(typeName);
-				if (foundType == null)
-				{
-					Debug.LogErrorFormat("Type not found: {0}", typeName);
-					return false;
-				}
-			}
-			catch (System.Exception e)
-			{
-				Debug.LogErrorFormat("Type name not qualified: {0}\n {1}", typeName, e);
-				return false;
-			}
-			return true;
-		}
-
-		/// <summary>
 		/// Determines if a type can be a possible Zombie object.
 		/// </summary>
 		public static bool IsZombieType(Type type)
 		{
 			if (type == null)
-			{
 				return false;
-			}
-			switch (Type.GetTypeCode(type))
-			{
-				case TypeCode.Byte:
-				case TypeCode.Decimal:
-				case TypeCode.Double:
-				case TypeCode.Int16:
-				case TypeCode.Int32:
-				case TypeCode.Int64:
-				case TypeCode.SByte:
-				case TypeCode.Single:
-				case TypeCode.UInt16:
-				case TypeCode.UInt32:
-				case TypeCode.UInt64:
-				case TypeCode.Boolean:
-				case TypeCode.Char:
-				case TypeCode.String:
-					return false;
-				case TypeCode.Object:
-					if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
-					{
-						return IsZombieType(Nullable.GetUnderlyingType(type));
-					}
-					return true;
-			}
-			return false;
+			if (type.IsValueType) // Primitives and structs.
+				return false;
+
+			if (Type.GetTypeCode(type) != TypeCode.Object)
+				return false;
+
+			// For a nullable "Something?", recurse into the "Something" part.
+			if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(Nullable<>))
+				return IsZombieType(Nullable.GetUnderlyingType(type));
+
+			// TODO: Presumably test here whether type.isSubclassOf (typeof (UnityEngine.Object))
+			return true;
 		}
+
 
 		/// <summary>
 		/// Tests the IsZombieType method.
