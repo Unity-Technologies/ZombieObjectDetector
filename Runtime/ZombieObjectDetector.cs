@@ -66,44 +66,34 @@ namespace CSharpZombieDetector
 		object m_TestObject = new object();
 
 		// Prevent concurrent runs.
-		private bool m_IsLogging = false;
-		public bool IsLogging()
-		{
-			return m_IsLogging;
-		}
+		public bool IsLogging { get; private set; }
 
+		private void Awake()
+		{
+			IsLogging = false;
+		}
 
 		public void RunZombieObjectDetection()
 		{
-			if (!m_IsLogging)
+			if (IsLogging)
 			{
-				StartCoroutine(LogZombies());
+				Debug.LogWarning("ZombieObjectDetector already running.");
+				return;
 			}
-			else
-			{
-				Debug.LogWarning("ZombieDetector Already Logging!");
-			}
+			StartCoroutine(LogZombies());
 		}
 
 
-
-		private void OnGUI()
-		{
-			if (m_IsLogging)
-			{
-				GUI.Box(new Rect(0, 0, Screen.width, Screen.height), "Logging Zombie Objects!");
-			}
-		}
 
 		private IEnumerator LogZombies()
 		{
-			m_IsLogging = true;
+			IsLogging = true;
 
-			yield return new WaitForEndOfFrame();
+			yield return new WaitForEndOfFrame(); // TODO: Why?
 
 			ProcessAllObjectsFromStaticRoots();
 
-			m_IsLogging = false;
+			IsLogging = false;
 
 			yield return null;
 		}
@@ -159,22 +149,7 @@ namespace CSharpZombieDetector
 			var memberInfos = type.GetMembers(flags)
 				.Where(m => (m.MemberType & RelevantMemberTypes) != 0);
 
-			foreach (MemberInfo memberInfo in memberInfos)
-			{
-				m_MemberInfoChain.Push(memberInfo);
-				switch (memberInfo.MemberType)
-				{
-					case MemberTypes.Event:
-						TraverseMemberEvent(memberInfo, null);
-						break;
-					case MemberTypes.Field:
-						TraverseMemberField(memberInfo, null);
-						break;
-					default:
-						break;
-				}
-				m_MemberInfoChain.Pop();
-			}
+			RecurseMemberList(memberInfos, null);
 		}
 
 		private void TraverseMemberEvent(MemberInfo memberInfo, object memberParentObject)
@@ -266,6 +241,8 @@ namespace CSharpZombieDetector
 			try
 			{
 				// Checks if .Equals has been implemented properly before adding to the object list.
+				//
+				// TODO:  Why do we do this?  I can't remember.
 				obj.Equals(m_TestObject);
 			}
 			catch (Exception e)
@@ -278,10 +255,15 @@ namespace CSharpZombieDetector
 				return;
 			}
 
-			LogIsZombieObject(obj);
+			TestObject(obj);
 
-			List<MemberInfo> memberInfos = obj.GetType().GetMembers(k_AllNonStaticFields).ToList();
+			MemberInfo [] memberInfos = obj.GetType().GetMembers(k_AllNonStaticFields);
+			RecurseMemberList(memberInfos, obj);
+		}
 
+
+		private void RecurseMemberList (IEnumerable<MemberInfo> memberInfos, object obj)
+		{
 			foreach (MemberInfo memberInfo in memberInfos)
 			{
 				m_MemberInfoChain.Push(memberInfo);
@@ -313,14 +295,23 @@ namespace CSharpZombieDetector
 		/// Uses Unity Fake Null
 		/// https://blogs.unity3d.com/2014/05/16/custom-operator-should-we-keep-it/
 		/// https://forum.unity.com/threads/fun-with-null.148090/
-		/// ToString results in "null" when unity has passed the object to garbage collector.
 		/// </summary>
-		private void LogIsZombieObject(object obj)
+		private void TestObject(object obj)
 		{
+			// An object is a zombie if:
+			//
+			// * It is not actually null.
+			// * It is a subclass of UnityEngine.Object
+			// * It compares itself as equal to null.
+			//
+			bool zombie = false;
+			bool exists = obj != null; // Comparing a System.object. "Fake null" doesn't get a chance to run here.
+			bool isUnityObj = exists && obj.GetType().IsSubclassOf(typeof(UnityEngine.Object));
 			UnityEngine.Object unityObj = obj as UnityEngine.Object;
-			bool isZombie = obj.ToString() == "null";
+			zombie |= isUnityObj && (unityObj == null);
+			
 			m_ScannedObjects.Add(obj);
-			if (!isZombie)
+			if (!zombie)
 				return;
 
 			if (ZombieHit != null)
@@ -336,7 +327,7 @@ namespace CSharpZombieDetector
 		{
 			bool result = false;
 
-			if (!TypeHelper.IsZombieType(type))
+			if (!TypeHelper.IsPotentialZombieType(type))
 			{
 				// shouldnt handle basic value types (int,float etc):/
 			}

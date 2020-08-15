@@ -31,13 +31,10 @@ namespace CSharpZombieDetector
 
 		private void PrintHit(ZombieObjectDetector.ZombieHitInfo info)
 		{
-			StringWriter w = new StringWriter();
-			w.WriteLine($"Found zombie object of type {info.obj.GetType()}");
-			w.WriteLine($"Member chain is:");
-			w.WriteLine(info.memberChain.Last().DeclaringType);
-			foreach (var m in info.memberChain.Reverse())
-				w.WriteLine($"-> {m}");
-			Debug.Log(w.ToString());
+			string objType = info.obj.GetType().FullName;
+			string startType = info.memberChain.Last().DeclaringType.FullName;
+			IEnumerable<string> chain = info.memberChain.Reverse().Select(m => m.Name);
+			Debug.Log($"Found zombie of type {objType}, at {startType}.{string.Join(".", chain)}");
 		}
 	}
 
