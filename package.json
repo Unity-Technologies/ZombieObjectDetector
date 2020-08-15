@@ -4,6 +4,11 @@
 	"displayName" : "Zombie Object Detector",
 	"description" : "Tool to detect \"fake null\" GameObjects and Components. https://github.com/Unity-Technologies/ZombieObjectDetector",
 	"unity" : "2018.4",
-	"keywords" : [ "zombie", "fake", "null", "leak" ]
+	"keywords" : [ "zombie", "fake", "null", "leak" ],
+	"author" : {
+		"name" : "Peter Pimley",
+		"email" : "peter.pimley@unity3d.com",
+		"url" : "https://github.com/peter-pimley-unity"
+	}
 }
 	
