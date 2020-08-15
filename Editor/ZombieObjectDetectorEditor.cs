@@ -1,5 +1,7 @@
 ﻿using UnityEditor;
 using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace CSharpZombieDetector
 {
@@ -13,8 +15,6 @@ namespace CSharpZombieDetector
         private SerializedProperty m_LoggingOptions;
         
         private SerializedProperty m_IgnoredTypeStrings;
-
-        private SerializedProperty m_TypesToScanStrings;
 
         private SerializedProperty m_LogZombieKeyCode;
 
@@ -46,50 +46,15 @@ namespace CSharpZombieDetector
             m_LogZombieKeyCode = m_SerializedZombieDetector.FindProperty("m_LogZombieKeyCode");
 
             m_IgnoredTypeStrings = m_SerializedZombieDetector.FindProperty("m_IgnoredTypeStrings");
-
-            m_TypesToScanStrings = m_SerializedZombieDetector.FindProperty("m_TypesToScanStrings");
         }
 
         public override void OnInspectorGUI()
         {
             m_SerializedZombieDetector.Update();
 
-            m_LoggingOptions.intValue = (int)(ZombieObjectDetector.LoggingOptions)EditorGUILayout.EnumMaskField(
-                new GUIContent("Logging Options", "Allows different depths of logging."),
-                (ZombieObjectDetector.LoggingOptions)m_LoggingOptions.intValue);
+			DrawIgnoreAssemblyList();
+			DrawIgnoredTypeList();
 
-            EditorGUILayout.BeginVertical(GUI.skin.box);
-
-            EditorGUI.indentLevel++;
-            m_ShowLoggingOptionDescriptions = EditorGUILayout.Foldout(m_ShowLoggingOptionDescriptions, "Logging Option Descriptions");
-            EditorGUI.indentLevel--;
-
-            if (m_ShowLoggingOptionDescriptions)
-            {
-                DrawOptionDescription("InvalidType", "Logs information about types that are ignored because they can't cause, or be used to detect, zombie objects (int,float etc)");
-
-                DrawOptionDescription("ListBadEqualsImplementations", "Lists all Bad .Equals Implementations that were found causing the object and all its members to be ignored.");
-
-                DrawOptionDescription("ListScannedObjects", "Lists all objects that have had there members checked for zombie objects.");
-
-                DrawOptionDescription("ListScannedStaticMembers", "List of all Static Members that have been checked from there roots.");
-
-                DrawOptionDescription("ZombieCountForEachStaticField", "Individual Zombie Object count for Static field roots.");
-
-                DrawOptionDescription("ZombieStackTrace", "Zombie object stack trace, used to find root to object causeing leaks.");
-
-                DrawOptionDescription("Default Options", "ZombieStackTrace\nZombieCountForEachStaticField.");
-            }
-
-            EditorGUILayout.EndVertical();
-
-            EditorGUILayout.PropertyField(m_LogTag);
-
-            DisplayTypeList("Types to scan. Empty to scan all types.", m_TypesToScanStrings, ref m_NameOfTypeToScanToAdd, ref m_HasFailedToAddTypeToScan);
-
-            DisplayTypeList("Types to ignore.", m_IgnoredTypeStrings, ref m_NameOfIgnoredTypeToAdd, ref m_HasFailedToAddIgnoredType);
-
-            EditorGUILayout.PropertyField(m_LogZombieKeyCode, new GUIContent("Zombie Logging Key Code", "Used for logging in builds"));
 
             EditorGUI.BeginDisabledGroup(!Application.isPlaying || m_ZombieDetector.IsLogging());
             if (Application.isPlaying)
@@ -109,64 +74,65 @@ namespace CSharpZombieDetector
             m_SerializedZombieDetector.ApplyModifiedProperties();
         }
 
-        private void DisplayTypeList(string label, SerializedProperty property, ref string inputText, ref bool hasFailedToAdd)
-        {
-            if (hasFailedToAdd && inputText == "")
-            {
-                hasFailedToAdd = false;
-            }
-            EditorGUILayout.BeginVertical("Box");
 
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField(label);
+		private bool m_showAssemblyIgnores = false;
 
-            if (hasFailedToAdd)
-            {
-                Color oldColor = GUI.color;
-                GUI.color = Color.red;
-                EditorGUILayout.LabelField("Type Not Found: " + inputText);
-                GUI.color = oldColor;
-            }
-            EditorGUILayout.EndHorizontal();
+		private void DrawIgnoreAssemblyList()
+		{
+			DrawRegexList(
+				"m_ignoreAssemblyPatterns",
+				"Assembly Ignore Patterns",
+				ref m_showAssemblyIgnores,
+				ZombieObjectDetector.DefaultAssemblyIgnorePatterns);
+		}
 
-            // Box for adding Ignored Types.
-            EditorGUILayout.BeginHorizontal("Box");
-            inputText = EditorGUILayout.TextField(inputText);
-            if (GUILayout.Button("+", GUILayout.Width(40.0f)))
-            {
-                // attempt add type.
-                GUI.FocusControl(null);
-                if (TypeHelper.IsType(inputText))
-                {
-                    AddType(inputText, property);
-                    inputText = "";
-                    hasFailedToAdd = false;
-                }
-                else
-                {
-                    hasFailedToAdd = true;
-                }
 
-            }
+		private bool m_showTypeIgnores = false;
 
-            EditorGUILayout.EndHorizontal();
+		private void DrawIgnoredTypeList()
+		{
+			DrawRegexList (
+				"m_ignoreTypePatterns",
+				"Type Ignore Patterns",
+				ref m_showTypeIgnores,
+				ZombieObjectDetector.DefaultIgnoreTypePatterns);
+		}
 
-            for (int i = 0; i < property.arraySize; i++)
-            {
 
-                EditorGUILayout.BeginHorizontal("Box");
+		private void DrawRegexList (
+			string propName,
+			string name,
+			ref bool show,
+			string [] defaults)
+		{
 
-                EditorGUILayout.LabelField(GetType(i, property));
-                if (GUILayout.Button("-", GUILayout.Width(40.0f)))
-                {
-                    RemoveType(i, property);
-                    GUI.FocusControl(null);
-                }
-                EditorGUILayout.EndHorizontal();
-            }
+			SerializedProperty prop = serializedObject.FindProperty(propName);
+			bool reset = false;
+			using (new GUILayout.HorizontalScope())
+			{
+				show = EditorGUILayout.Foldout(show, name);
+				if (!show)
+					reset |= GUILayout.Button("Reset", GUILayout.ExpandWidth(false));
+			}
+			if (show)
+			{
+				using (new EditorGUI.IndentLevelScope())
+				{
+					EditorGUILayout.PropertyField(prop, new GUIContent("Values"));
+					reset |= GUILayout.Button("Reset to Defaults");
+					if (reset)
+					{
+						prop.arraySize = defaults.Length;
+						for (int i = 0; i < defaults.Length; ++i)
+							prop.GetArrayElementAtIndex(i).stringValue = defaults[i];
+					}
+				}
+				serializedObject.ApplyModifiedProperties();
+			}
+		}
 
-            EditorGUILayout.EndVertical();
-        }
+
+ 
         private void AddType(string typeName, SerializedProperty property)
         {
             property.InsertArrayElementAtIndex(property.arraySize);
