@@ -1,78 +1,76 @@
 ﻿using UnityEditor;
 using UnityEngine;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace CSharpZombieDetector
 {
 
-    [CustomEditor(typeof(ZombieObjectDetector))]
-    public class ZombieObjectDetectorEditor : Editor
-    {
+	[CustomEditor(typeof(ZombieObjectDetector))]
+	public class ZombieObjectDetectorEditor : Editor
+	{
 
-        private SerializedObject m_SerializedZombieDetector;
+		private SerializedObject m_SerializedZombieDetector;
 
-        private SerializedProperty m_LoggingOptions;
-        
-        private SerializedProperty m_IgnoredTypeStrings;
+		private SerializedProperty m_LoggingOptions;
 
-        private SerializedProperty m_LogZombieKeyCode;
+		private SerializedProperty m_IgnoredTypeStrings;
 
-        private SerializedProperty m_LogTag;
+		private SerializedProperty m_LogZombieKeyCode;
 
-        private ZombieObjectDetector m_ZombieDetector;
+		private SerializedProperty m_LogTag;
 
-        private string m_NameOfTypeToScanToAdd = "";
+		private ZombieObjectDetector m_ZombieDetector;
 
-        private bool m_HasFailedToAddTypeToScan = false;
+		private string m_NameOfTypeToScanToAdd = "";
 
-        private string m_NameOfIgnoredTypeToAdd = "";
+		private bool m_HasFailedToAddTypeToScan = false;
 
-        private bool m_HasFailedToAddIgnoredType = false;
+		private string m_NameOfIgnoredTypeToAdd = "";
 
-        private bool m_ShowLoggingOptionDescriptions = false;
+		private bool m_HasFailedToAddIgnoredType = false;
 
-        private void OnEnable()
-        {
+		private bool m_ShowLoggingOptionDescriptions = false;
 
-            m_SerializedZombieDetector = new SerializedObject(target);
+		private void OnEnable()
+		{
 
-            m_ZombieDetector = (ZombieObjectDetector)(target);
+			m_SerializedZombieDetector = new SerializedObject(target);
 
-            m_LoggingOptions = m_SerializedZombieDetector.FindProperty("m_LoggingOptions");
-            
-            m_LogTag = m_SerializedZombieDetector.FindProperty("m_LogTag");
+			m_ZombieDetector = (ZombieObjectDetector)(target);
 
-            m_LogZombieKeyCode = m_SerializedZombieDetector.FindProperty("m_LogZombieKeyCode");
+			m_LoggingOptions = m_SerializedZombieDetector.FindProperty("m_LoggingOptions");
 
-            m_IgnoredTypeStrings = m_SerializedZombieDetector.FindProperty("m_IgnoredTypeStrings");
-        }
+			m_LogTag = m_SerializedZombieDetector.FindProperty("m_LogTag");
 
-        public override void OnInspectorGUI()
-        {
-            m_SerializedZombieDetector.Update();
+			m_LogZombieKeyCode = m_SerializedZombieDetector.FindProperty("m_LogZombieKeyCode");
+
+			m_IgnoredTypeStrings = m_SerializedZombieDetector.FindProperty("m_IgnoredTypeStrings");
+		}
+
+		public override void OnInspectorGUI()
+		{
+			m_SerializedZombieDetector.Update();
 
 			DrawIgnoreAssemblyList();
 			DrawIgnoredTypeList();
 
 
-            EditorGUI.BeginDisabledGroup(!Application.isPlaying || m_ZombieDetector.IsLogging());
-            if (Application.isPlaying)
-            {
-                if (GUILayout.Button("Log Zombies"))
-                {
-                    m_ZombieDetector.RunZombieObjectDetection();
-                }
-            }
-            else
-            {
-                GUILayout.Button("Log Zombies (Available during Play)");
-            }
+			EditorGUI.BeginDisabledGroup(!Application.isPlaying || m_ZombieDetector.IsLogging());
+			if (Application.isPlaying)
+			{
+				if (GUILayout.Button("Log Zombies"))
+				{
+					m_ZombieDetector.RunZombieObjectDetection();
+				}
+			}
+			else
+			{
+				GUILayout.Button("Log Zombies (Available during Play)");
+			}
 
-            EditorGUI.EndDisabledGroup();
-            
-            m_SerializedZombieDetector.ApplyModifiedProperties();
-        }
+			EditorGUI.EndDisabledGroup();
+
+			m_SerializedZombieDetector.ApplyModifiedProperties();
+		}
 
 
 		private bool m_showAssemblyIgnores = false;
@@ -91,7 +89,7 @@ namespace CSharpZombieDetector
 
 		private void DrawIgnoredTypeList()
 		{
-			DrawRegexList (
+			DrawRegexList(
 				"m_ignoreTypePatterns",
 				"Type Ignore Patterns",
 				ref m_showTypeIgnores,
@@ -99,11 +97,11 @@ namespace CSharpZombieDetector
 		}
 
 
-		private void DrawRegexList (
+		private void DrawRegexList(
 			string propName,
 			string name,
 			ref bool show,
-			string [] defaults)
+			string[] defaults)
 		{
 
 			SerializedProperty prop = serializedObject.FindProperty(propName);
@@ -132,56 +130,56 @@ namespace CSharpZombieDetector
 		}
 
 
- 
-        private void AddType(string typeName, SerializedProperty property)
-        {
-            property.InsertArrayElementAtIndex(property.arraySize);
-            property.GetArrayElementAtIndex(property.arraySize - 1).stringValue = typeName;
-        }
 
-        private void RemoveType(int index, SerializedProperty property)
-        {
-            for (int i = index; i < (property.arraySize - 1); i++)
-            {
-                SetType(i, GetType(i + 1, property), property);
-            }
-            property.arraySize--;
-        }
+		private void AddType(string typeName, SerializedProperty property)
+		{
+			property.InsertArrayElementAtIndex(property.arraySize);
+			property.GetArrayElementAtIndex(property.arraySize - 1).stringValue = typeName;
+		}
 
-        private void SetType(int index, string typeName, SerializedProperty property)
-        {
-            property.GetArrayElementAtIndex(index).stringValue = typeName;
-        }
+		private void RemoveType(int index, SerializedProperty property)
+		{
+			for (int i = index; i < (property.arraySize - 1); i++)
+			{
+				SetType(i, GetType(i + 1, property), property);
+			}
+			property.arraySize--;
+		}
 
-        private string GetType(int index, SerializedProperty property)
-        {
-            return property.GetArrayElementAtIndex(index).stringValue;
-        }
+		private void SetType(int index, string typeName, SerializedProperty property)
+		{
+			property.GetArrayElementAtIndex(index).stringValue = typeName;
+		}
 
-        [MenuItem("GameObject/Create Zombie Object Detector", priority = 0)]
-        public static void CreateZombieDetector()
-        {
-            ZombieObjectDetector m_ZombieDetector = FindObjectOfType<ZombieObjectDetector>();
-            if (m_ZombieDetector == null)
-            {
-                Debug.Log("Creating A Default Zombie Object Detector");
-                new GameObject("ZombieObjectDetector", typeof(ZombieObjectDetector));
-            }
-            else
-            {
-                Debug.LogWarning("Zombie Object Detector Already Exists.");
-            }
-        }
+		private string GetType(int index, SerializedProperty property)
+		{
+			return property.GetArrayElementAtIndex(index).stringValue;
+		}
 
-        private void DrawOptionDescription(string name, string description)
-        {
+		[MenuItem("GameObject/Create Zombie Object Detector", priority = 0)]
+		public static void CreateZombieDetector()
+		{
+			ZombieObjectDetector m_ZombieDetector = FindObjectOfType<ZombieObjectDetector>();
+			if (m_ZombieDetector == null)
+			{
+				Debug.Log("Creating A Default Zombie Object Detector");
+				new GameObject("ZombieObjectDetector", typeof(ZombieObjectDetector));
+			}
+			else
+			{
+				Debug.LogWarning("Zombie Object Detector Already Exists.");
+			}
+		}
 
-            EditorGUILayout.BeginHorizontal(GUI.skin.box);
-            EditorGUILayout.LabelField(name, GUILayout.MinWidth(180), GUILayout.MaxWidth(180));
-            EditorGUILayout.LabelField(description, EditorStyles.wordWrappedLabel);
-            EditorGUILayout.EndHorizontal();
-        }
-    }
+		private void DrawOptionDescription(string name, string description)
+		{
+
+			EditorGUILayout.BeginHorizontal(GUI.skin.box);
+			EditorGUILayout.LabelField(name, GUILayout.MinWidth(180), GUILayout.MaxWidth(180));
+			EditorGUILayout.LabelField(description, EditorStyles.wordWrappedLabel);
+			EditorGUILayout.EndHorizontal();
+		}
+	}
 
 
 
