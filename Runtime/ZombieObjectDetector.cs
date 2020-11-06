@@ -27,7 +27,7 @@ namespace CSharpZombieDetector
 
 		// Assemblies whose name matches any of the following patterns will be skipped.
 		[SerializeField]
-		private List<string> m_ignoreAssemblyPatterns = new List<string>();
+		private string[] m_ignoreAssemblyPatterns = DefaultAssemblyIgnorePatterns;
 
 		public static readonly string[] DefaultAssemblyIgnorePatterns = {
 			"^Unity\\.", "^UnityEngine", "^UnityEditor", "^mscorlib$", "^System", "^Mono\\."
