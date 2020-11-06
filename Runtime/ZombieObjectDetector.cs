@@ -286,7 +286,7 @@ namespace CSharpZombieDetector
 		public struct ZombieHitInfo
 		{
 			public object obj;
-			public IEnumerable<MemberInfo> memberChain;
+			public MemberInfo [] memberChain;
 		};
 
 		public event System.Action<ZombieHitInfo> ZombieHit;
@@ -318,7 +318,7 @@ namespace CSharpZombieDetector
 				ZombieHit(new ZombieHitInfo
 				{
 					obj = obj,
-					memberChain = m_MemberInfoChain
+					memberChain = m_MemberInfoChain.ToArray()
 				});
 		}
 
