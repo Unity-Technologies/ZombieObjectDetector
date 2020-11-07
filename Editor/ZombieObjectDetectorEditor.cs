@@ -78,10 +78,10 @@ namespace CSharpZombieDetector
 		private void DrawDetectionButton()
 		{
 			var zod = target as ZombieObjectDetector;
-			bool enabled = Application.isPlaying && !zod.IsLogging;
+			bool enabled = Application.isPlaying;
 			using (new EditorGUI.DisabledGroupScope(!enabled))
 			{
-				if (Application.isPlaying)
+				if (enabled)
 				{
 					if (GUILayout.Button("Log Zombies"))
 					{
