@@ -12,28 +12,17 @@ namespace CSharpZombieDetector
 
 	public class ZombieObjectDetector_Report_TTY : MonoBehaviour
 	{
-
-		private event System.Action Destroyed;
-
 		private void Awake()
 		{
 			var zod = GetComponent<ZombieObjectDetector>();
-			zod.ZombieHit += PrintHit;
-			Destroyed += () => zod.ZombieHit -= PrintHit;
+			zod.SearchStarted += (search) => search.ZombieHit += PrintHit;
 		}
 
-		private void OnDestroy()
-		{
-			if (Destroyed != null )
-				Destroyed();
-		}
-
-
-		private void PrintHit(ZombieObjectDetector.ZombieHitInfo info)
+		private void PrintHit(ZombieObjectDetector.SearchContext.ZombieHitInfo info)
 		{
 			string objType = info.obj.GetType().FullName;
-			string startType = info.memberChain.Last().DeclaringType.FullName;
-			IEnumerable<string> chain = info.memberChain.Reverse().Select(m => m.Name);
+			string startType = info.fieldChain.Last().DeclaringType.FullName;
+			IEnumerable<string> chain = info.fieldChain.Reverse().Select(m => m.Name);
 			Debug.Log($"Found zombie of type {objType}, at {startType}.{string.Join(".", chain)}");
 		}
 	}
