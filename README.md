@@ -24,22 +24,6 @@ An object is considered a zombie if it satisfies all of the following criteria:
 
 This repository contains an example project that contains various examples of Zombie objects.  These examples are simple and easy to fix.  In larger projects this is not always the case. This tool will help you find them, and give you a trace of where and what is keeping them alive. 
 
-# Included Examples:
-
-* Unsafe pointer: requires Unity 2017.1 or for the msc.rsp file to be declared with -unsafe. [https://stackoverflow.com/questions/39132079/how-to-use-unsafe-code-unity/39132664#39132664](https://stackoverflow.com/questions/39132079/how-to-use-unsafe-code-unity/39132664#39132664) 
-
-* BadEqualImplementation: Equals is overridden with a bad example that causes it to get ignored.
-
-* FalsePositive: Override of ToString() causing zombie check to fail.
-
-* IgnoredTypeParam: IgnoredTypeParam<T> : MonoBehaviour where T : MonoBehaviour, the derived classes are still scanned, and all member variables still getting scanned.
-
-* Arrays, Lists, Stacks and Dictionaries:
-
-* Events: Lambda and normal function attachment.
-
-* References: static and sub references
-
 
 # Credits
 
