@@ -52,6 +52,7 @@ namespace CSharpZombieDetector
 			};
 
 			public event System.Action<ZombieHitInfo> ZombieHit;
+			public event System.Action SearchCompleted;
 
 
 			private HashSet<object> m_scannedObjects = new HashSet<object>();
@@ -197,6 +198,8 @@ namespace CSharpZombieDetector
 					}
 					CheckStaticFields(type);
 				}
+				if (SearchCompleted != null)
+					SearchCompleted();
 			}
 		}
 
