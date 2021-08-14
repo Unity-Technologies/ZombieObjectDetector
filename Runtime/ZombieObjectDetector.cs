@@ -45,19 +45,38 @@ namespace CSharpZombieDetector
 		public class SearchContext
 		{
 
-			public struct ZombieHitInfo
+			public struct TestInfo
 			{
 				public object obj;
-				public FieldInfo[] fieldChain;
+				public Type type;
+				public FieldInfo fieldInfo;
 			};
+			public event System.Action<TestInfo> TestingObjectField;
 
-			public event System.Action<ZombieHitInfo> ZombieHit;
+			public event System.Action<System.Exception> CaughtExceptionAndContinued;
+
+			public event System.Action<object> ZombieHit;
 			public event System.Action SearchCompleted;
+
+			/// <summary>
+			///  Fired every 1024 objects.
+			///  Allows for progress reporting, e.g. to prove the process has not hung.
+			/// </summary>
+			public event System.Action MadeProgress;
 
 
 			private HashSet<object> m_scannedObjects = new HashSet<object>();
 			private Stack<FieldInfo> m_fieldInfos = new Stack<FieldInfo>();
+
+			/// <summary>
+			/// Note that the order is "backwards"; the most recent field is first,
+			/// and the static field where the search started is last.
+			/// </summary>
+			public IEnumerable<FieldInfo> FieldInfoChain => m_fieldInfos;
+
 			private int m_maxDepth;
+
+			public uint NumTestsPerformed { get; private set; }
 
 			public SearchContext (int maxDepth)
 			{
@@ -83,15 +102,19 @@ namespace CSharpZombieDetector
 
 
 
-			private void CheckObjectField(object o, FieldInfo fieldInfo)
+			private void CheckObjectField(object o, Type oType, FieldInfo fieldInfo)
 			{
 				if (m_fieldInfos.Count > m_maxDepth)
 					throw new System.OverflowException("Max depth exceeded.");
 
+				TestingObjectField?.Invoke(new TestInfo { obj = o, type = oType, fieldInfo = fieldInfo });
+
 				m_fieldInfos.Push(fieldInfo);
 				try
 				{
-					object val = fieldInfo.GetValue(o);
+					object val = null;
+					try { val = fieldInfo.GetValue(o); }
+					catch (System.Exception) { } // val stays null.  See next line.
 					if (val == null)
 						return; // (Still runs the "finally" below)
 					TestAndRecurse(val);
@@ -128,20 +151,28 @@ namespace CSharpZombieDetector
 				if (obj == null)
 					return;
 
-				if (!IsValidZombieType(obj.GetType()))
+				System.Type objType = obj.GetType();
+				// Note that we're thinking about the *runtime* type of this object,
+				// rather than the compile-time type of whatever field it was stored under.
+
+				if (!IsValidZombieType(objType))
 					return;
 
-				if (m_scannedObjects.Contains(obj))
+				bool testedAlready = true;
+				try { testedAlready = m_scannedObjects.Contains(obj); }
+				catch (System.Exception x) { } // testedAlready remains true.  See subsequent line.
+				if (testedAlready)
 					return;
+
 				m_scannedObjects.Add(obj);
 
 				TestObject(obj);
 
 				// Recurse into this object's instance fields.
 				BindingFlags flags = BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance;
-				FieldInfo[] fields = obj.GetType().GetFields(flags);
+				FieldInfo[] fields = objType.GetFields(flags);
 				foreach (FieldInfo field in fields)
-					CheckObjectField(obj, field);
+					CheckObjectField(obj, objType, field);
 			}
 
 			/// <summary>
@@ -162,15 +193,14 @@ namespace CSharpZombieDetector
 				UnityEngine.Object unityObj = obj as UnityEngine.Object;
 				bool zombie = exists && isUnityObj && (unityObj == null);
 
-				if (!zombie)
-					return;
+				++NumTestsPerformed;
+				// Emit an event every 1024 tests.
+				bool madeProgress = (NumTestsPerformed & 0x3ff) == 0;
+				if (madeProgress)
+					MadeProgress?.Invoke();
 
-				if (ZombieHit != null)
-					ZombieHit(new ZombieHitInfo
-					{
-						obj = obj,
-						fieldChain = m_fieldInfos.ToArray()
-					});
+				if (zombie)
+					ZombieHit?.Invoke(obj);
 			}
 
 
@@ -184,7 +214,7 @@ namespace CSharpZombieDetector
 				// (TODO I wonder why generic types are skipped?)
 				FieldInfo[] staticFields = type.GetFields(flags);
 				foreach (FieldInfo field in staticFields)
-					CheckObjectField(null, field);
+					CheckObjectField(null, type, field);
 			}
 
 
