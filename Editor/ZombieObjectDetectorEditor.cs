@@ -13,6 +13,7 @@ namespace CSharpZombieDetector
 			EditorGUILayout.PropertyField(serializedObject.FindProperty("m_runOnStart"));
 			DrawIgnoreAssemblyList();
 			DrawIgnoredTypeList();
+			DrawIgnoredTypesDuringSearch();
 			DrawDetectionButton();
 			serializedObject.ApplyModifiedProperties();
 		}
@@ -25,7 +26,7 @@ namespace CSharpZombieDetector
 		{
 			DrawRegexList(
 				"m_ignoreAssemblyPatterns",
-				"Assembly Ignore Patterns",
+				"Do not start from these Assemblies (Regex)",
 				ref m_showAssemblyIgnores,
 				ZombieObjectDetector.DefaultAssemblyIgnorePatterns);
 		}
@@ -37,11 +38,22 @@ namespace CSharpZombieDetector
 		{
 			DrawRegexList(
 				"m_ignoreTypePatterns",
-				"Type Ignore Patterns",
+				"Do not start from these Types (Regex)",
 				ref m_showTypeIgnores,
 				ZombieObjectDetector.DefaultIgnoreTypePatterns);
 		}
 
+
+		private bool m_showSearchTypeIgnores = false;
+
+		private void DrawIgnoredTypesDuringSearch()
+		{
+			DrawRegexList(
+				"m_ignoreTypePatternsDuringSearch",
+				"Do not recurse into these Types during search (Regex)",
+				ref m_showSearchTypeIgnores,
+				new string[] { }); // Default is empty string[]
+		}
 
 		private void DrawRegexList(
 			string propName,
@@ -55,22 +67,20 @@ namespace CSharpZombieDetector
 			using (new GUILayout.HorizontalScope())
 			{
 				show = EditorGUILayout.Foldout(show, name);
-				if (!show)
-					reset |= GUILayout.Button("Reset", GUILayout.ExpandWidth(false));
+				reset |= GUILayout.Button("Reset", GUILayout.ExpandWidth(false));
 			}
 			if (show)
 			{
 				using (new EditorGUI.IndentLevelScope())
 				{
 					EditorGUILayout.PropertyField(prop, new GUIContent("Values"));
-					reset |= GUILayout.Button("Reset to Defaults");
-					if (reset)
-					{
-						prop.arraySize = defaults.Length;
-						for (int i = 0; i < defaults.Length; ++i)
-							prop.GetArrayElementAtIndex(i).stringValue = defaults[i];
-					}
 				}
+			}
+			if (reset)
+			{
+				prop.arraySize = defaults.Length;
+				for (int i = 0; i < defaults.Length; ++i)
+					prop.GetArrayElementAtIndex(i).stringValue = defaults[i];
 			}
 		}
 

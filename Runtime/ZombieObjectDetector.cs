@@ -15,7 +15,7 @@ namespace CSharpZombieDetector
 		[SerializeField]
 		private bool m_runOnStart = false;
 
-		// Assemblies whose name matches any of the following patterns will be skipped.
+		// Types within Assemblies whose name matches any of the following patterns will not be used as starting points.
 		[SerializeField]
 		private string[] m_ignoreAssemblyPatterns = DefaultAssemblyIgnorePatterns;
 
@@ -25,7 +25,7 @@ namespace CSharpZombieDetector
 
 
 
-		// Types whose name matches any of these regex patterns will be skipped.
+		// Types whose name matches any of these regex patterns will not be used as starting points.
 		[SerializeField]
 		private string[] m_ignoreTypePatterns = DefaultIgnoreTypePatterns;
 
@@ -34,6 +34,10 @@ namespace CSharpZombieDetector
 			"^System\\.", "^Unity\\.", "^UnityEngine\\.", "^UnityEditor\\.", "^Mono\\."
 		};
 
+
+		// Types whose name matches any of these regex patterns will be skipped from the recursion.
+		[SerializeField]
+		private string[] m_ignoreTypePatternsDuringSearch;
 
 		// An exception will be thrown if we recurse deeper than this.
 		// (Avoids crashing the editor/player)
@@ -81,9 +85,13 @@ namespace CSharpZombieDetector
 
 			public uint NumTestsPerformed { get; private set; }
 
-			public SearchContext (int maxDepth)
+			private IEnumerable<Regex> m_ignoreTypes;
+
+			public SearchContext (int maxDepth, IEnumerable<string> ignoreTypeNameRegexStrings)
 			{
 				m_maxDepth = maxDepth;
+				if (ignoreTypeNameRegexStrings != null && ignoreTypeNameRegexStrings.Any())
+					m_ignoreTypes = ignoreTypeNameRegexStrings.Select(s => new Regex(s)).ToList();
 			}
 
 			public static bool IsValidZombieType(Type type)
@@ -109,6 +117,10 @@ namespace CSharpZombieDetector
 			{
 				if (m_fieldInfos.Count > m_maxDepth)
 					throw new System.OverflowException("Max depth exceeded.");
+
+				string typeName = oType.FullName;
+				if (m_ignoreTypes != null && m_ignoreTypes.Any(r => r.IsMatch(typeName)))
+					return;
 
 				TestingObjectField?.Invoke(new TestInfo { obj = o, type = oType, fieldInfo = fieldInfo });
 
@@ -286,7 +298,7 @@ namespace CSharpZombieDetector
 		{
 			IEnumerable<Type> types = GetStartTypes();
 
-			SearchContext ctx = new SearchContext(m_maxDepth);
+			SearchContext ctx = new SearchContext(m_maxDepth, m_ignoreTypePatternsDuringSearch);
 			if (SearchStarted != null)
 				SearchStarted(ctx);
 
