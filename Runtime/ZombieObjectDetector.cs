@@ -12,6 +12,9 @@ namespace CSharpZombieDetector
 	public class ZombieObjectDetector : MonoBehaviour
 	{
 
+		[SerializeField]
+		private bool m_runOnStart = false;
+
 		// Assemblies whose name matches any of the following patterns will be skipped.
 		[SerializeField]
 		private string[] m_ignoreAssemblyPatterns = DefaultAssemblyIgnorePatterns;
@@ -273,6 +276,11 @@ namespace CSharpZombieDetector
 			return types;
 		}
 
+		private void Start()
+		{
+			if (m_runOnStart)
+				RunZombieObjectDetection();
+		}
 
 		public void RunZombieObjectDetection()
 		{

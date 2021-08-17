@@ -10,9 +10,11 @@ namespace CSharpZombieDetector
 
 		public override void OnInspectorGUI()
 		{
+			EditorGUILayout.PropertyField(serializedObject.FindProperty("m_runOnStart"));
 			DrawIgnoreAssemblyList();
 			DrawIgnoredTypeList();
 			DrawDetectionButton();
+			serializedObject.ApplyModifiedProperties();
 		}
 
 
@@ -69,7 +71,6 @@ namespace CSharpZombieDetector
 							prop.GetArrayElementAtIndex(i).stringValue = defaults[i];
 					}
 				}
-				serializedObject.ApplyModifiedProperties();
 			}
 		}
 
