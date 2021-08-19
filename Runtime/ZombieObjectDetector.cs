@@ -236,15 +236,8 @@ namespace CSharpZombieDetector
 			public void Search (IEnumerable<Type> types)
 			{
 				foreach (Type type in types)
-				{
-					if (type.Name == "Thing")
-					{
-						int x = 123;
-					}
 					CheckStaticFields(type);
-				}
-				if (SearchCompleted != null)
-					SearchCompleted();
+				SearchCompleted?.Invoke();
 			}
 		}
 
