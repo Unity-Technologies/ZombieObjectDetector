@@ -13,6 +13,23 @@ namespace CSharpZombieDetector
 
 	public class ZombieObjectDetector_Report_TTY : MonoBehaviour
 	{
+
+		[SerializeField]
+		[Tooltip("Print every test performed (VERY verbose)")]
+		private bool m_reportTest = false;
+
+		[SerializeField]
+		[Tooltip("Print when a zombie is encountered (You probably want this on)")]
+		private bool m_reportHit = true;
+
+		[SerializeField]
+		[Tooltip("Print a message every 1024 tests (useful to show it hasn't hung)")]
+		private bool m_reportProgress = false;
+
+		[SerializeField]
+		[Tooltip("Print when the search completes")]
+		private bool m_reportCompletion = true;
+
 		private void Awake()
 		{
 			var zod = GetComponent<ZombieObjectDetector>();
@@ -23,10 +40,14 @@ namespace CSharpZombieDetector
 		{
 			var startTime = System.DateTime.Now;
 			Debug.Log($"Search started at {startTime}");
-			search.TestingObjectField += ReportTest;
-			search.MadeProgress += () => PrintProgress(search);
-			search.ZombieHit += (obj) => PrintHit(search, obj);
-			search.SearchCompleted += () => CompleteSearch(search, startTime);
+			if (m_reportTest)
+				search.TestingObjectField += ReportTest;
+			if (m_reportProgress)
+				search.MadeProgress += () => PrintProgress(search);
+			if (m_reportHit)
+				search.ZombieHit += (obj) => PrintHit(search, obj);
+			if (m_reportCompletion)
+				search.SearchCompleted += () => CompleteSearch(search, startTime);
 		}
 
 		private void PrintProgress (ZombieObjectDetector.SearchContext ctx)
