@@ -85,7 +85,8 @@ namespace CSharpZombieDetector
 				IEnumerable<Regex> regexes =
 					Enumerable.Range(0, prop.arraySize)
 					.Select(i => prop.GetArrayElementAtIndex(i).stringValue)
-					.Select(s => new Regex(s));
+					.Select(s => new Regex(s))
+					.Where(r => r != null);
 				bool match = regexes.Any(r => r.IsMatch(m_doodle));
 				m_testResult = match ? "Match" : "Not a match";
 			}
