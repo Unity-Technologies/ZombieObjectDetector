@@ -1,4 +1,7 @@
 
+## 0.4.2 - 2022-02-22
+### Changed
+- Improved documentation (README.md)
 
 ## 0.4.1 - 2021-08-19
 ### Fixed
