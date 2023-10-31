@@ -2,6 +2,10 @@
 
 Scripts to detect and diagnose zombie objects.
 
+## Important Notice
+
+Version 1.1 of the _com.unity.memoryprofiler_ package now includes support for detecting the same types of objects as this tool.  I expect that this will allow me to deprecate this tool at some point in the future.  - @peter-pimley-unity
+
 ## Quick Start
 
 ### Package import
